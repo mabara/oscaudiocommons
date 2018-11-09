@@ -1,0 +1,48 @@
+#N canvas 116 95 822 587 10;
+#X declare -lib zexy;
+#X declare -lib mrpeach;
+#X obj 471 370 packOSC;
+#X obj 334 428 udpsend;
+#X msg 155 422 disconnect;
+#X obj 334 478 tgl 15 0 empty empty 1=connected 20 8 0 8 -4034 -257985
+-1 1 1;
+#X obj 186 115 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 33 46 declare -lib zexy;
+#X obj 32 16 declare -lib mrpeach;
+#X msg 487 309 send /query \$1;
+#X obj 507 243 l2s;
+#X obj 153 345 print;
+#X msg 329 191 7777;
+#X obj 152 262 pack s s f;
+#X msg 105 194 connect;
+#X msg 185 193 symbol 192.168.1.4;
+#X msg 152 294 \$1 \$2 \$3;
+#X text 320 170 Specify OSC port;
+#X text 202 13 Sends OSC message to query sounds given specified keyword(s)
+Copyright (c) 2017-2018 \, Mathieu Barthet \, Some Rights Reserved
+;
+#X text 189 173 Specify IP address;
+#X text 35 114 Starts UDP connection;
+#X text 44 415 Disconnects UDP connection;
+#X text 538 243 Requires zexy;
+#X text 400 429 Requires mrpeach;
+#X text 502 126 Specify text search;
+#X text 504 148 It can be one or more keywords. For example: birds
+birds cats;
+#X msg 507 200 birds cats;
+#X connect 0 0 1 0;
+#X connect 1 0 3 0;
+#X connect 2 0 1 0;
+#X connect 4 0 13 0;
+#X connect 4 0 10 0;
+#X connect 4 0 12 0;
+#X connect 7 0 0 0;
+#X connect 8 0 7 0;
+#X connect 10 0 11 2;
+#X connect 11 0 14 0;
+#X connect 12 0 11 0;
+#X connect 13 0 11 1;
+#X connect 14 0 9 0;
+#X connect 14 0 1 0;
+#X connect 24 0 8 0;
