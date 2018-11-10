@@ -98,6 +98,7 @@ def retrieve_sound(keyword):
 	print("Query")
 	
 	#specifies the query through keyword and filtering options
+	#in this example, the selected source content provider is Freesound
 	params = dict(pattern=keyword, source="freesound")
 	response = requests.get(url, params=params)
 	print(urllib.unquote(response.url).decode('utf8'))
@@ -110,42 +111,47 @@ def retrieve_sound(keyword):
 
 		resdic = json.loads(restext)
 		
-		nsounds = len(resdic["results"][0]["members"])
+		if (resdic!={} and resdic["results"]!=[]): #checks that the query returned results
+			nsounds = len(resdic["results"][0]["members"])
 				
-		print("Number of results for query %s: %d"%(keyword, nsounds))
+			print("Number of results for query %s: %d"%(keyword, nsounds))
 
-		if nsounds>=1: #if there is at least 1 sound matching the criteria
+			if nsounds>=1: #if there is at least 1 sound matching the criteria
 			
-			#download random result within first SOUND_RANGE sounds if no of sounds
-			#is greater than 1
-			if nsounds==1:
-				sound_index=0
-			else:
-				sound_index = random.randint(0,min(SOUND_RANGE,nsounds))
+				#download random result within first SOUND_RANGE sounds if no of sounds
+				#is greater than 1
+				if nsounds==1:
+					sound_index=0
+				else:
+					sound_index = random.randint(0,min(SOUND_RANGE,nsounds))
 			
-			print(sound_index)
-			soundname = resdic["results"][0]["members"][sound_index]["content"]["title"]
-			print("Sound name: %s"%soundname)
+				print("Sound number %d has been picked up randomly."%sound_index)
+				soundname = resdic["results"][0]["members"][sound_index]["content"]["title"]
+				print("Sound name: %s"%soundname)
 			
-			for i in resdic["results"][0]["members"][sound_index]["content"]["availableAs"]:
-				if i["hasAudioEncodingFormat"]=="ebu-codecs:_8.4": #mp3
-					soundurl = i["locator"] #selects the first mp3 version
-					break
+				#picks an mp3 version of the sound
+				for i in resdic["results"][0]["members"][sound_index]["content"]["availableAs"]:
+					audioencoding = i["hasAudioEncodingFormat"]
+					if (audioencoding=="ebu-codecs:_8.4" or "mp3" in audioencoding): #mp3
+						soundurl = i["locator"] #selects the first mp3 version
+						break
 			
-			print("Downloading ",soundurl)
+				print("Downloading ",soundurl)
 
-			soundpath = os.path.join(sounddir,soundname + ".mp3")
-			print("Sound download location: ",soundpath)
+				soundpath = os.path.join(sounddir,soundname + ".mp3")
+				print("Sound download location: ",soundpath)
 
-			if os.path.exists(soundpath) == 0: #if the file has not yet been downloaded
-				#starts a process to download the sound
-				p = Process(target=download_sound, args=(queue, soundurl, soundpath))
-				p.start()
-				p.join() # this blocks until the process terminates
-				print("Sound downloaded.")
+				if os.path.exists(soundpath) == 0: #if the file has not yet been downloaded
+					#starts a process to download the sound
+					p = Process(target=download_sound, args=(queue, soundurl, soundpath))
+					p.start()
+					p.join() # this blocks until the process terminates
+					print("Sound downloaded.")
 
-			else: #sound already exists
-				print("Sound already exists.")
+				else: #sound already exists
+					print("Sound already exists.")
+		else:
+			print("The query did not provide any results.")
 	
 	except AssertionError:
 		print('There is an issue with the HTTP GET request to query sounds.')
@@ -183,14 +189,28 @@ def user_callback(path, tags, args, source):
 	# args is a OSCMessage with data
 	# source is where the message came from (in case you need to reply)
 	#print ("Now do something with", user,args[2],args[0],1-args[1])
-	keyword = args[0]
-	print ("Process OSC address",oscadd,"with keyword",keyword)
-
-	path = retrieve_sound(keyword)
 	
-	if path != []:
-		print ("Finished retrieving sound.")
-		play_sound(path)
+	#If there are multiple keywords separated by spaces and lines, we only take the first one
+	#(the current version of the Audio Commons API doesn't handle multiple keywords).
+	keyword = args[0]
+	keyword = ' '.join([line.strip() for line in keyword.strip().splitlines()])
+	keyword = keyword.split(" ")[0].lstrip()
+	
+	print("keyword:%s"%keyword)
+	
+	try:
+		keyword.decode('ascii') #checks that the keyword is encoded in ASCII
+	
+		print ("Process OSC address",oscadd,"with keyword:",keyword)
+
+		path = retrieve_sound(keyword)
+	
+		if path != []:
+			print ("Finished retrieving sound.")
+			play_sound(path)
+	
+	except UnicodeDecodeError:
+		print("The keyword needs to be a ascii-encoded unicode string.")
 
 # from pyosc example
 def quit_callback(path, tags, args, source):
